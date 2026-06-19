@@ -10,16 +10,25 @@ import { toCanvas } from 'html-to-image';
 
 // Local Static Data for Studio
 const backgrounds: Background[] = [
-  { id: 'night', name: 'سماء ليلية', url: '/backgrounds/night-sky.jpg', type: 'image' },
-  { id: 'makka', name: 'مكة المكرمة', url: '/backgrounds/makka.jpg', type: 'image' },
-  { id: 'madina', name: 'المدينة المنورة', url: '/backgrounds/madina.jpg', type: 'image' },
-  { id: 'mosque', name: 'مسجد أندلسي', url: '/backgrounds/mosque.jpg', type: 'image' },
-  { id: 'nature', name: 'طبيعة', url: '/backgrounds/nature.jpg', type: 'image' }
+  { id: '1', name: 'سماء مرصعة بالنجوم', url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80', type: 'image' },
+  { id: '2', name: 'غروب هادئ', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1920&q=80', type: 'image' },
+  { id: '3', name: 'جبال ضبابية', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80', type: 'image' },
+  { id: '4', name: 'مسجد الشيخ زايد', url: 'https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=1920&q=80', type: 'image' },
+  { id: '5', name: 'طبيعة خضراء', url: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=1920&q=80', type: 'image' },
+  { id: '6', name: 'مجرة وكواكب', url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1920&q=80', type: 'image' },
+  { id: '7', name: 'غيوم داكنة', url: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&w=1920&q=80', type: 'image' },
+  { id: '8', name: 'أشجار النخيل', url: 'https://images.unsplash.com/photo-1502484080614-25e1a1edaa7e?auto=format&fit=crop&w=1920&q=80', type: 'image' },
+  { id: '9', name: 'صحراء ذهبية', url: 'https://images.unsplash.com/photo-1682687982501-1e58f8145c22?auto=format&fit=crop&w=1920&q=80', type: 'image' },
+  { id: '10', name: 'أضواء الشفق', url: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1920&q=80', type: 'image' },
 ];
 
 const reciters: Reciter[] = [
   { id: 'alafasy', name: 'مشاري العفاسي', language: 'ar', isExampleOnly: false },
   { id: 'abdulbasit', name: 'عبدالباسط عبدالصمد', language: 'ar', isExampleOnly: false },
+  { id: 'husary', name: 'محمود خليل الحصري', language: 'ar', isExampleOnly: false },
+  { id: 'minshawy', name: 'محمد صديق المنشاوي', language: 'ar', isExampleOnly: false },
+  { id: 'maher', name: 'ماهر المعيقلي', language: 'ar', isExampleOnly: false },
+  { id: 'shatri', name: 'أبو بكر الشاطري', language: 'ar', isExampleOnly: false },
 ];
 
 const designStyles: { id: DesignStyle; name: string; classes: string }[] = [
@@ -373,7 +382,7 @@ export default function Studio() {
            <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.4)] shrink-0">
              <Play className="w-6 h-6 text-slate-900 fill-current" />
            </div>
-           <span className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-l from-amber-200 to-white bg-clip-text text-transparent truncate block">Quran Video Studio</span>
+           <span className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-l from-amber-200 to-white bg-clip-text text-transparent truncate block">Quran Video Pro Studio</span>
          </div>
          <div className="flex gap-4 sm:gap-8 text-sm font-medium opacity-80 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar justify-center">
            <Link to="/" className="hover:text-amber-400 transition-colors whitespace-nowrap">الرئيسية</Link>
@@ -639,7 +648,7 @@ export default function Studio() {
            <span className="whitespace-nowrap">OFFLINE PROCESSING</span>
          </div>
          <div className="text-[10px] md:text-[11px] font-medium opacity-80 text-center">
-           تصميم احترافي • Quran Video Studio • جميع الحقوق محفوظة {new Date().getFullYear()}
+           تصميم احترافي • Quran Video Pro Studio • جميع الحقوق محفوظة {new Date().getFullYear()}
          </div>
       </footer>
 
