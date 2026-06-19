@@ -1,0 +1,6 @@
+{
+  "name": "Quran Video Studio",
+  "description": "Professional studio platform that generates high-quality Quranic videos by merging Quran verses, recitations, backgrounds and visual effects, entirely from the browser in a standalone offline-first context.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

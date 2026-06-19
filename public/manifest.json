@@ -1,0 +1,23 @@
+{
+  "name": "Quran Video Studio",
+  "short_name": "QuranStudio",
+  "description": "منصة إنشاء الفيديوهات القرآنية الاحترافية.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#d4af37",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "dir": "rtl",
+  "lang": "ar"
+}
