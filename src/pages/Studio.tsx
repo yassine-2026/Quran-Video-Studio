@@ -102,18 +102,35 @@ export default function Studio() {
       }
   };
 
-  const exportVideo = async () => {
+    const exportVideo = async () => {
     // Advanced Canvas + MediaRecorder export simulating professional video rendering
     if (!previewRef.current || isExporting) return;
     
+    console.log("--- Debug System ---");
+    console.log("Selected Surah:", selectedSurah);
+    console.log("Selected Ayahs:", startAyah, endAyah);
+    console.log("Reciter:", selectedReciter.id);
+    console.log("Background:", selectedBg.id);
+    console.log("--------------------");
+
     // Strict Pre-flight Validation
+    if (loading) {
+        alert("يرجى الانتظار حتى يكتمل تحميل بيانات القرآن الكريم.");
+        return;
+    }
+
     if (!activeSurahMeta || selectedSurah < 1 || selectedSurah > 114) {
-        alert("سورة غير صالحة. يرجى التحقق من اختيارك.");
+        alert("يرجى اختيار السورة كاملة والآيات والقارئ والخلفية بشكل صحيح.");
         return;
     }
     
-    if (!activeAyahs || activeAyahs.length === 0 || startAyah < 1 || endAyah > activeSurahMeta.ayahCount) {
-        alert("نطاق الآيات غير صحيح. يرجى تحديد آيات ضمن حدود السورة مختارة.");
+    if (!activeAyahs || activeAyahs.length === 0) {
+        alert("يرجى اختيار السورة كاملة والآيات والقارئ والخلفية (الآيات المحددة غير متوفرة).");
+        return;
+    }
+
+    if (startAyah < 1 || endAyah > activeSurahMeta.ayahCount || startAyah > endAyah) {
+        alert("نطاق الآيات غير صحيح. يرجى تحديد آيات ضمن حدود السورة المختارة وبشكل منطقي.");
         return;
     }
     
@@ -474,10 +491,10 @@ export default function Studio() {
             <div className="mt-auto shrink-0 pt-2">
                <button 
                   onClick={exportVideo}
-                  disabled={isExporting}
+                  disabled={isExporting || loading || activeAyahs.length === 0}
                   className="w-full py-4 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:hover:bg-amber-500 text-slate-950 font-black rounded-2xl shadow-[0_10px_30px_rgba(245,158,11,0.3)] transition-all flex items-center justify-center gap-2"
                >
-                  <span>{isExporting ? `جاري التصدير ${exportProgress}%` : 'تصدير فيديو عالي الجودة'}</span>
+                  <span>{isExporting ? `جاري التصدير ${exportProgress}%` : (loading ? 'جاري التحميل...' : 'تصدير فيديو عالي الجودة')}</span>
                   {isExporting ? <RefreshCw className="w-5 h-5 animate-spin" /> : (
                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                   )}
@@ -520,7 +537,7 @@ export default function Studio() {
                         className={cn("w-full leading-relaxed flex flex-col items-center", activeStyleConfig?.classes)}
                      >
                         <p style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', color: textColor }} dir="rtl" className={textEffect}>
-                           {currentAyah ? currentAyah.text : "الرجاء تحديد الآيات"}
+                           {currentAyah ? currentAyah.text : (loading ? "جاري تحميل البيانات..." : "الرجاء تحديد الآيات")}
                         </p>
                         {currentAyah && (
                            <div className="mt-8 px-4 py-1.5 rounded-full bg-slate-900/50 backdrop-blur-sm border border-white/10 text-sm font-tajawal text-slate-300 flex items-center gap-2">
