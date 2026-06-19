@@ -256,23 +256,23 @@ export default function Studio() {
             const ayahAudio = new Audio(audioUrl);
             ayahAudio.crossOrigin = "anonymous";
             
-            const ayahPlaybackPromise = new Promise<void>((resolveAyah) => {
-                let intervalId: any;
+            const ayahPlaybackPromise = new Promise<void>((resolveAyah, rejectAyah) => {
+                let animationFrameId: number;
                 let sourceNode: MediaElementAudioSourceNode | null = null;
                 
                 const finishAyah = () => {
-                    clearInterval(intervalId);
+                    cancelAnimationFrame(animationFrameId);
                     if (sourceNode) {
                         try { sourceNode.disconnect(); } catch (e) {}
                     }
-                    resolveAyah();
+                    resolveAyah(); // always resolve to continue video export even if one audio fails
                 };
 
                 const startLoop = (durationMs: number) => {
-                    let elapsed = 0;
-                    intervalId = setInterval(() => {
-                        elapsed += 33;
-                        const progress = elapsed / durationMs;
+                    const startTime = performance.now();
+                    const loop = (time: number) => {
+                        const elapsed = time - startTime;
+                        const progress = Math.min(elapsed / durationMs, 1);
                         
                         // Slow dramatic zoom effect (1.0 -> 1.05)
                         const scale = 1 + progress * 0.05;
@@ -287,10 +287,13 @@ export default function Studio() {
                         ctx.drawImage(frameCanvas, 0, 0, width, height);
                         ctx.restore();
                         
-                        if (elapsed >= durationMs) {
+                        if (elapsed < durationMs) {
+                            animationFrameId = requestAnimationFrame(loop);
+                        } else {
                             finishAyah();
                         }
-                    }, 33);
+                    };
+                    animationFrameId = requestAnimationFrame(loop);
                 };
 
                 ayahAudio.oncanplaythrough = async () => {
@@ -306,42 +309,26 @@ export default function Studio() {
                     
                     ayahAudio.play().catch(e => console.warn("Audio play blocked", e));
                     
-                    intervalId = setInterval(() => {
-                        const duration = Math.max(ayahAudio.duration || 1, 1);
-                        const progress = ayahAudio.currentTime / duration;
-                        const scale = 1 + progress * 0.05;
-                        
-                        ctx.fillStyle = "#020617";
-                        ctx.fillRect(0, 0, width, height);
-                        
-                        ctx.save();
-                        ctx.translate(width/2, height/2);
-                        ctx.scale(scale, scale);
-                        ctx.translate(-width/2, -height/2);
-                        ctx.drawImage(frameCanvas, 0, 0, width, height);
-                        ctx.restore();
-                    }, 33);
+                    const duration = Math.max(ayahAudio.duration || 1, 1);
+                    startLoop(duration * 1000); // start the requestAnimationFrame loop based on audio duration
                 };
                 
                 ayahAudio.onended = finishAyah;
                 
                 ayahAudio.onerror = () => {
                     console.error(`Audio error during generation for verse ${activeAyahs[i].verse}`);
-                    finishAyah();
-                    throw new Error("Audio verification failed during generation.");
+                    startLoop(4000); // fallback visual loop instead of halting
                 };
                 
                 ayahAudio.load();
                 
                 // Safety timeout
                 setTimeout(() => {
-                    if (!intervalId && ayahAudio.readyState === 0) {
+                    if (!animationFrameId && ayahAudio.readyState === 0) {
                          console.error(`Safety timeout for verse ${activeAyahs[i].verse}`);
-                         finishAyah();
-                         // Reject but we can't easily throw inside setTimeout to global catch, 
-                         // we will just let it finish with an error state.
+                         startLoop(4000); // fallback visual loop
                     }
-                }, 10000); // give it more time since we already validated
+                }, 10000);
             });
             
             await ayahPlaybackPromise;
@@ -433,12 +420,33 @@ export default function Studio() {
                      ))}
                   </select>
                   <div className="flex gap-2">
-                     <input type="number" min={1} max={activeSurahMeta?.ayahCount} 
-                        value={startAyah} onChange={e => setStartAyah(Number(e.target.value))}
-                        className="w-1/2 bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="من" />
-                     <input type="number" min={startAyah} max={activeSurahMeta?.ayahCount} 
-                        value={endAyah} onChange={e => setEndAyah(Number(e.target.value))}
-                        className="w-1/2 bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="إلى" />
+                     <select 
+                        value={startAyah} 
+                        onChange={e => {
+                            let v = Number(e.target.value);
+                            setStartAyah(v);
+                            if (v > endAyah) setEndAyah(v);
+                        }}
+                        className="w-1/2 bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500"
+                     >
+                        {activeSurahMeta ? Array.from({length: activeSurahMeta.ayahCount}, (_, i) => i + 1).map(v => (
+                            <option key={v} value={v}>الآية {v}</option>
+                        )) : <option value={1}>الآية 1</option>}
+                     </select>
+                     
+                     <select 
+                        value={endAyah} 
+                        onChange={e => {
+                            let v = Number(e.target.value);
+                            setEndAyah(v);
+                            if (v < startAyah) setStartAyah(v);
+                        }}
+                        className="w-1/2 bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500"
+                     >
+                        {activeSurahMeta ? Array.from({length: activeSurahMeta.ayahCount}, (_, i) => i + 1).map(v => (
+                            <option key={v} value={v}>إلى {v}</option>
+                        )) : <option value={1}>إلى 1</option>}
+                     </select>
                   </div>
                </div>
             </div>
