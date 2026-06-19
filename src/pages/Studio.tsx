@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useQuran } from '../lib/useQuran';
 import { surahs } from '../lib/quranData';
 import type { Background, Reciter, DesignStyle, Ayah } from '../lib/types';
-import { formatRecitationUrl, cn, padZero } from '../lib/utils';
+import { formatRecitationUrl, fetchRecitationAsBlobUrl, cn, padZero } from '../lib/utils';
 import { toCanvas } from 'html-to-image';
 
 // Local Static Data for Studio
@@ -119,13 +119,8 @@ export default function Studio() {
         return;
     }
 
-    if (!activeSurahMeta || selectedSurah < 1 || selectedSurah > 114) {
-        alert("يرجى اختيار السورة كاملة والآيات والقارئ والخلفية بشكل صحيح.");
-        return;
-    }
-    
-    if (!activeAyahs || activeAyahs.length === 0) {
-        alert("يرجى اختيار السورة كاملة والآيات والقارئ والخلفية (الآيات المحددة غير متوفرة).");
+    if (!activeSurahMeta || !activeAyahs || activeAyahs.length === 0 || !selectedReciter || !selectedBg) {
+        alert("لا يمكن إنشاء الفيديو بدون السورة والآيات والصوت والخلفية");
         return;
     }
 
@@ -147,22 +142,14 @@ export default function Studio() {
     setIsPlaying(false); // Stop playback
     setCurrentAyahIndex(0); // Reset
 
-    // Audio pre-flight check function
-    const validateAudio = (url: string) => {
-        return new Promise<boolean>((resolve) => {
-            const audio = new Audio(url);
-            audio.oncanplaythrough = () => resolve(true);
-            audio.onerror = () => resolve(false);
-            audio.src = url;
-            audio.load();
-        });
-    };
-
-    // Strict validation mapping
+    const loadedAudioUrls: string[] = [];
+    
+    // Strict validation mapping by actually fetching exactly what we will use
     for (const ayah of activeAyahs) {
-        const audioUrl = formatRecitationUrl(selectedReciter.id, selectedSurah, ayah.verse);
-        const isValid = await validateAudio(audioUrl);
-        if (!isValid) {
+        try {
+            const url = await fetchRecitationAsBlobUrl(selectedReciter.id, selectedSurah, ayah.verse);
+            loadedAudioUrls.push(url);
+        } catch(e) {
             alert(`خطأ: تلاوة الآية رقم ${ayah.verse} من سورة ${activeSurahMeta?.name} غير مطابقة أو مفقودة للشيخ ${selectedReciter.name}. لقد تم إيقاف إنشاء الفيديو.`);
             setIsExporting(false);
             setExportProgress(0);
@@ -252,9 +239,9 @@ export default function Studio() {
                pixelRatio: 2 
             });
             
-            const audioUrl = formatRecitationUrl(selectedReciter.id, selectedSurah, activeAyahs[i].verse);
+            const audioUrl = loadedAudioUrls[i];
             const ayahAudio = new Audio(audioUrl);
-            ayahAudio.crossOrigin = "anonymous";
+            // No crossOrigin needed because it's a local object URL
             
             const ayahPlaybackPromise = new Promise<void>((resolveAyah, rejectAyah) => {
                 let animationFrameId: number;
@@ -538,10 +525,10 @@ export default function Studio() {
                      
                      <motion.div 
                         key={currentAyah?.verse}
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        initial={isExporting ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.05 }}
-                        transition={{ duration: 0.8 }}
+                        exit={isExporting ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.05 }}
+                        transition={{ duration: isExporting ? 0 : 0.8 }}
                         className={cn("w-full leading-relaxed flex flex-col items-center", activeStyleConfig?.classes)}
                      >
                         <p style={{ fontSize: `${fontSize}px`, lineHeight: '1.6', color: textColor }} dir="rtl" className={textEffect}>
@@ -560,9 +547,9 @@ export default function Studio() {
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-30">
                         <motion.div 
                            className="h-full bg-amber-500"
-                           initial={{ width: 0 }}
+                           initial={isExporting ? { width: `${((currentAyahIndex + 1) / (activeAyahs.length || 1)) * 100}%` } : { width: 0 }}
                            animate={{ width: `${((currentAyahIndex + 1) / (activeAyahs.length || 1)) * 100}%` }}
-                           transition={{ duration: 3, ease: "linear" }}
+                           transition={{ duration: isExporting ? 0 : 3, ease: "linear" }}
                            key={`progress-${currentAyah?.verse}`}
                         />
                   </div>
