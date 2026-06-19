@@ -18,8 +18,8 @@ const backgrounds: Background[] = [
 ];
 
 const reciters: Reciter[] = [
-  { id: 'alafasy', name: 'مشاري العفاسي', language: 'ar', isExampleOnly: true },
-  { id: 'abdulbasit', name: 'عبدالباسط عبدالصمد', language: 'ar', isExampleOnly: true },
+  { id: 'alafasy', name: 'مشاري العفاسي', language: 'ar', isExampleOnly: false },
+  { id: 'abdulbasit', name: 'عبدالباسط عبدالصمد', language: 'ar', isExampleOnly: false },
 ];
 
 const designStyles: { id: DesignStyle; name: string; classes: string }[] = [
@@ -64,13 +64,12 @@ export default function Studio() {
   useEffect(() => {
     if (isPlaying && currentAyah) {
         if (audioRef.current) {
-            // Attempt to load the specific ayah audio file. 
-            // NOTE: In this offline setup, we only downloaded Al-Fatiha for demo purposes.
             audioRef.current.src = formatRecitationUrl(selectedReciter.id, selectedSurah, currentAyah.verse);
             audioRef.current.play().catch(e => {
-                console.warn("Audio file missing for this ayah offline. Faking playback.");
-                // Fake a 4-second delay if audio not found for the demo
-                setTimeout(() => handleAudioEnded(), 4000);
+                console.warn("Audio file missing for this ayah.");
+                alert(`خطأ: تلاوة الآية رقم ${currentAyah.verse} من سورة ${activeSurahMeta?.name} غير مطابقة أو مفقودة للشيخ ${selectedReciter.name}. لقد تم إيقاف المعاينة.`);
+                setIsPlaying(false);
+                setCurrentAyahIndex(0);
             });
         }
     }
@@ -98,10 +97,52 @@ export default function Studio() {
     // Advanced Canvas + MediaRecorder export simulating professional video rendering
     if (!previewRef.current || isExporting) return;
     
+    // Strict Pre-flight Validation
+    if (!activeSurahMeta || selectedSurah < 1 || selectedSurah > 114) {
+        alert("سورة غير صالحة. يرجى التحقق من اختيارك.");
+        return;
+    }
+    
+    if (!activeAyahs || activeAyahs.length === 0 || startAyah < 1 || endAyah > activeSurahMeta.ayahCount) {
+        alert("نطاق الآيات غير صحيح. يرجى تحديد آيات ضمن حدود السورة مختارة.");
+        return;
+    }
+    
+    // Validate Ayah Sequence
+    for (let i = 1; i < activeAyahs.length; i++) {
+        if (activeAyahs[i].verse !== activeAyahs[i-1].verse + 1) {
+            alert(`تسلسل الآيات غير صحيح (انقطاع بين الآية ${activeAyahs[i-1].verse} و ${activeAyahs[i].verse}). يرجى التأكد من تسلسل البيانات.`);
+            return;
+        }
+    }
+
     setIsExporting(true);
-    setExportProgress(0);
+    setExportProgress(1); // Indicate start
     setIsPlaying(false); // Stop playback
     setCurrentAyahIndex(0); // Reset
+
+    // Audio pre-flight check function
+    const validateAudio = (url: string) => {
+        return new Promise<boolean>((resolve) => {
+            const audio = new Audio(url);
+            audio.oncanplaythrough = () => resolve(true);
+            audio.onerror = () => resolve(false);
+            audio.src = url;
+            audio.load();
+        });
+    };
+
+    // Strict validation mapping
+    for (const ayah of activeAyahs) {
+        const audioUrl = formatRecitationUrl(selectedReciter.id, selectedSurah, ayah.verse);
+        const isValid = await validateAudio(audioUrl);
+        if (!isValid) {
+            alert(`خطأ: تلاوة الآية رقم ${ayah.verse} من سورة ${activeSurahMeta?.name} غير مطابقة أو مفقودة للشيخ ${selectedReciter.name}. لقد تم إيقاف إنشاء الفيديو.`);
+            setIsExporting(false);
+            setExportProgress(0);
+            return;
+        }
+    }
 
     try {
         // We will render frames to a canvas and record them.
@@ -259,8 +300,9 @@ export default function Studio() {
                 ayahAudio.onended = finishAyah;
                 
                 ayahAudio.onerror = () => {
-                    console.warn(`Audio missing for verse ${activeAyahs[i].verse}, using fallback duration.`);
-                    startLoop(4000); // 4 sec fallback for missing audio
+                    console.error(`Audio error during generation for verse ${activeAyahs[i].verse}`);
+                    finishAyah();
+                    throw new Error("Audio verification failed during generation.");
                 };
                 
                 ayahAudio.load();
@@ -268,9 +310,12 @@ export default function Studio() {
                 // Safety timeout
                 setTimeout(() => {
                     if (!intervalId && ayahAudio.readyState === 0) {
-                         startLoop(4000);
+                         console.error(`Safety timeout for verse ${activeAyahs[i].verse}`);
+                         finishAyah();
+                         // Reject but we can't easily throw inside setTimeout to global catch, 
+                         // we will just let it finish with an error state.
                     }
-                }, 2500);
+                }, 10000); // give it more time since we already validated
             });
             
             await ayahPlaybackPromise;
@@ -385,7 +430,6 @@ export default function Studio() {
                         <option key={r.id} value={r.id}>{r.name}</option>
                      ))}
                   </select>
-                  <p className="text-[10px] text-white/50 leading-relaxed">تلاوة سورة الفاتحة مضمنة محلياً فقط لاختبار النظام بدون شبكة.</p>
                </div>
             </div>
 
